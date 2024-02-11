@@ -1,6 +1,6 @@
 import {Circle, Layout, Node, Ray, Rect, Txt, makeScene2D} from '@motion-canvas/2d';
 import { CodeBlock, remove, insert, edit, lines } from '@motion-canvas/2d/lib/components/CodeBlock';
-import {DEFAULT, Reference, all, beginSlide, createRef, createSignal} from '@motion-canvas/core';
+import {DEFAULT, Reference, all, beginSlide, createRef, createSignal, delay, makeRef} from '@motion-canvas/core';
 
 const BACKGROUND = '#282C34';
 const RED = '#E06C75';
@@ -224,6 +224,7 @@ export default makeScene2D(function* (view) {
 
     const rect = createRef<Rect>();
     const rbpRect = createRef<Rect>();
+    const padRect = createRef<Rect>();
     const local_cRect = createRef<Rect>();
     const local_30Rect = createRef<Rect>();
 
@@ -255,6 +256,14 @@ export default makeScene2D(function* (view) {
                 <Txt width={500} textAlign={'center'} fill={BLACK} text="RBP" fontFamily={'monospace'} />
             </Rect>
             <Rect
+                ref={padRect}
+                height={150}
+                width={500}
+                stroke={GRAY}
+                lineWidth={4}
+                grow={2}
+                />
+            <Rect
                 ref={local_cRect}
                 height={100}
                 width={500}
@@ -282,20 +291,14 @@ export default makeScene2D(function* (view) {
     </Rect>
     );
 
-    yield* all(
-        code().selection(DEFAULT, .5),
-        code().x(-code().width() / 2, 1),
-        rect().opacity(1, .5),
-        rect().x(rect().width() / 2 + 150, 1)
-    );
-
     const writeArrow = createRef<Ray>();
     const metaInfo = createRef<Node>();
+    const texts: Reference<Txt>[] = [];
     view.add(<Node ref={metaInfo} opacity={0}>
         <Ray
             ref={writeArrow}
-            fromX={rect().x() - rect().width() / 2 - 50}
-            toX={rect().x() - rect().width() / 2 - 50}
+            fromX={() => rect().x() - rect().width() / 2 - 50}
+            toX={() => rect().x() - rect().width() / 2 - 50}
             endArrow
             lineWidth={4}
             stroke={GRAY}
@@ -303,22 +306,72 @@ export default makeScene2D(function* (view) {
             toY={local_30Rect().y() + local_30Rect().height() / 2}
             lineDash={[10, 10]}
         />
-        <Txt topLeft={() => rbpRect().topRight().addX(rect().x() + 16)} text="RBP" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
-        <Txt left={() => rbpRect().right().addX(rect().x() + 16)} text="8" fill={GRAY} fontSize={36} />
-        <Txt left={() => rbpRect().bottomRight().addX(rect().x() + 16)} text="RBP - 0x8" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
-        <Txt left={() => local_cRect().right().addX(rect().x() + 16)} text="4" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
-        <Txt left={() => local_cRect().bottomRight().addX(rect().x() + 16)} text="RBP - 0xC" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
-        <Txt left={() => local_30Rect().right().addX(rect().x() + 16)} text="44" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
-        <Txt bottomLeft={() => local_30Rect().bottomRight().addX(rect().x() + 16)} text={"RSP\n= RBP - 0x38"} fill={GRAY} fontFamily={'monospace'} fontSize={36} />
+        <Txt ref={makeRef(texts, 0)} topLeft={() => rbpRect().topRight().addX(rect().x() + 16)} text="RBP + 0x8" fill={GRAY} fontSize={36} />
+        <Txt ref={makeRef(texts, 0+1)} left={() => rbpRect().right().addX(rect().x() + 16)} text="8" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
+        <Txt ref={makeRef(texts, 0+2)} left={() => padRect().topRight().addX(rect().x() + 16)} text="RBP" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
+        <Txt ref={makeRef(texts, 1+2)} left={() => padRect().right().addX(rect().x() + 16)} text="8" fill={GRAY} fontSize={36} />
+        <Txt ref={makeRef(texts, 2+2)} left={() => padRect().bottomRight().addX(rect().x() + 16)} text="RBP - 0x8" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
+        <Txt ref={makeRef(texts, 3+2)} left={() => local_cRect().right().addX(rect().x() + 16)} text="4" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
+        <Txt ref={makeRef(texts, 4+2)} left={() => local_cRect().bottomRight().addX(rect().x() + 16)} text="RBP - 0xC" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
+        <Txt ref={makeRef(texts, 5+2)} left={() => local_30Rect().right().addX(rect().x() + 16)} text="44" fill={GRAY} fontFamily={'monospace'} fontSize={36} />
+        <Txt ref={makeRef(texts, 6+2)} bottomLeft={() => local_30Rect().bottomRight().addX(rect().x() + 16)} text={"RSP\n= RBP - 0x38"} fill={GRAY} fontFamily={'monospace'} fontSize={36} />
     </Node>)
 
     let writeArrowTo = writeArrow().to();
-    writeArrowTo.y = local_30Rect().y() - local_30Rect().height() / 2;
 
     yield* all(
         metaInfo().opacity(1, 1),
-        writeArrow().to(writeArrowTo, 1)
+        writeArrow().to(() => {
+            writeArrowTo.y = local_30Rect().y() - local_30Rect().height() / 2;
+            writeArrowTo.x = rect().x() - rect().width() / 2 - 50;
+            return writeArrowTo;
+        }, 1),
+        code().selection(DEFAULT, .5),
+        code().x(-code().width() / 2, 1),
+        rect().opacity(1, .5),
+        rect().x(rect().width() / 2 + 150, 1)
     );
 
     yield* beginSlide('Memory visualization');
+
+    code().language('shell');
+    code().code(
+        `$ python3 -c "print('A' * 43)" | ./main
+Enter your name:
+Welcome AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA!`
+    );
+
+    yield* beginSlide('Shell part1');
+
+    yield* all(
+        writeArrow().to(() => {
+            writeArrowTo.y = local_30Rect().y() - local_30Rect().height() / 2 - 50;
+            return writeArrowTo;
+        }, 1),
+        delay(.5, writeArrow().stroke(RED, 1)),
+        code().edit(1.5, false)`
+$ python3 -c "print('A' * ${edit("43", "44")})" | ./main
+Enter your name:
+Welcome AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA${insert("A")}!${insert("\nYou win!")}`
+    );
+    
+    yield* beginSlide('Shell part2');
+
+
+    yield* all(
+        writeArrow().to(() => {
+            writeArrowTo.y = local_30Rect().y() - local_30Rect().height() / 2 - 300;
+            return writeArrowTo;
+        }, 1),
+        delay(.5, writeArrow().stroke(RED, 1)),
+        code().edit(1.5, false)`
+$ python3 -c "print('A' * ${edit("44", "56")})" | ./main
+Enter your name:
+Welcome AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA${insert("...")}!
+You win!${insert(`fish: Process 50623, './main' from job 1,
+'python3 -c "print('A' * 56)" | …'
+terminated by signal SIGSEGV (Address boundary error)`)}`
+    );
+
+    yield* beginSlide("Shell part3");
 });
