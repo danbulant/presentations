@@ -178,7 +178,7 @@ export default makeScene2D(function* (view) {
           <Txt width={500} textAlign={'center'} lineHeight={100} fill={BLACK} text={text} fontFamily={'monospace'} />
       </Rect>
     );
-  
+
     yield* all(
       changeRsp && rsp(rsp() + 100, 1),
       rectRef().height(100, 1),

