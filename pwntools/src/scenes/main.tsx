@@ -20,7 +20,7 @@ export default makeScene2D(function* (view) {
             code={"from pwm import *"}
             language='python'
             ref={cref}
-            fontSize={30}
+            fontSize={56}
         />);
     yield* beginSlide("first");
 
@@ -103,9 +103,7 @@ code = int(line.strip(), 16)
 `)}`;
 
     yield* beginSlide("code")
-
-    yield* cref().fontSize(24, .5)
-
+    yield* cref().fontSize(48, .5);
 
     yield* cref().edit(.5, lines(19,23))`from pwm import *
 
@@ -242,7 +240,8 @@ io.sendline(rop.chain())
     yield* beginSlide("send rop")
 
 
-    yield* cref().edit(.5, lines(34))`from pwm import *
+    yield* cref().edit(.5, lines(33))`
+from pwm import *
 
 context.arch = "amd64"
 context.terminal = ["tmux", "splitw", "-h"]
