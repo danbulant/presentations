@@ -1,4 +1,4 @@
-import {Circle, Layout, Node, Ray, Rect, Txt, makeScene2D, saturate} from '@motion-canvas/2d';
+import {Circle, Layout, Line, Node, Ray, Rect, Txt, makeScene2D, saturate} from '@motion-canvas/2d';
 import {DEFAULT, Direction, PossibleVector2, SignalValue, Vector2, all, beginSlide, createRef, delay, modify, slideTransition} from '@motion-canvas/core';
 import { CodeBlock, remove, insert, edit, lines, word } from '@motion-canvas/2d/lib/components/CodeBlock';
 
@@ -64,6 +64,12 @@ mov esi, 1
     const prevFrame = createRef<Rect>();
     const rip = createRef<Rect>();
     const rbp = createRef<Rect>();
+    const paddingNotif = createRef<Txt>();
+    const canary = createRef<Rect>();
+    const loop = createRef<Rect>();
+    const name = createRef<Rect>();
+    const nameText1 = createRef<Txt>();
+    const nameText2 = createRef<Txt>();
 
     view.add(<>
         <Rect
@@ -111,6 +117,41 @@ mov esi, 1
                     <Txt width='100%' padding={[0, 0, 0, 20]} textAlign={'left'} lineHeight={200} fill={BLACK} text="RBP" fontFamily={'monospace'} />
                     <Txt width='100%' padding={[0, 20, 0, 0]} textAlign={'right'} lineHeight={200} fill={BLACK} text="8" fontFamily={'monospace'} />
                 </Rect>
+                <Rect
+                    height={200}
+                    width='100%'
+                    ref={paddingNotif}
+                    >
+                    <Txt width='100%' padding={[0, 0, 0, 20]} textAlign={'left'} lineHeight={200} fill={WHITE} text="Padding" fontFamily={'monospace'} />
+                    <Txt width='100%' padding={[0, 20, 0, 0]} textAlign={'right'} lineHeight={200} fill={GRAY} text="8" fontFamily={'monospace'} />
+                </Rect>
+                <Rect
+                    height={200}
+                    width='100%'
+                    fill={YELLOW}
+                    ref={canary}
+                    >
+                    <Txt width='100%' padding={[0, 0, 0, 20]} textAlign={'left'} lineHeight={200} fill={BLACK} text="Canary" fontFamily={'monospace'} />
+                    <Txt width='100%' padding={[0, 20, 0, 0]} textAlign={'right'} lineHeight={200} fill={BLACK} text="8" fontFamily={'monospace'} />
+                </Rect>
+                <Rect
+                    height={100}
+                    width='100%'
+                    fill={MAGENTA}
+                    ref={loop}
+                    >
+                    <Txt width='100%' padding={[0, 0, 0, 20]} textAlign={'left'} lineHeight={100} fill={BLACK} text="Loop" fontFamily={'monospace'} />
+                    <Txt width='100%' padding={[0, 20, 0, 0]} textAlign={'right'} lineHeight={100} fill={BLACK} text="4" fontFamily={'monospace'} />
+                </Rect>
+                <Rect
+                    height={700}
+                    width='100%'
+                    fill={CYAN}
+                    ref={name}
+                    >
+                    <Txt width='100%' height='100%' ref={nameText1} padding={[0, 0, 0, 20]} textAlign={'left'} lineHeight={700} fill={BLACK} text="Name" fontFamily={'monospace'} />
+                    <Txt width='100%' height='100%' ref={nameText2} padding={[0, 20, 0, 0]} textAlign={'right'} lineHeight={700} fill={BLACK} text="32" fontFamily={'monospace'} />
+                </Rect>
             </Layout>
         </Rect>
         <Txt
@@ -130,35 +171,108 @@ mov esi, 1
         code().x(-3840/4, .3),
         rect().shadowBlur(20, .3),
         rect().shadowOffset(10, .3),
-        delay(.2, all(
-            rect().shadowColor(BLACK + "50", .3),
-            prevFrame().opacity(0).opacity(1, .2),
-            prevFrame().margin([200,0,0,0]).margin(0, .2),
-            delay(.2, all(
-                rip().opacity(0).opacity(1, .2),
-                rip().margin([200,0,0,0]).margin(0, .2),
-                delay(.2, all(
-                    rbp().opacity(0).opacity(1, .2),
-                    rbp().margin([200,0,0,0]).margin(0, .2),
-                ))
-            ))
-        ))
     );
 
-    yield* beginSlide("Reorder");
+    yield* beginSlide("Add 6");
 
-    const spacer = createRef<Layout>();
-    innerLayout().insert(
-        <>
-        <Layout layout height={0} ref={spacer} />
-        </>, 0
+    let printfParam = createRef<Rect>();
+
+    innerLayout().add(<>
+        <Rect
+            height={200}
+            width='100%'
+            fill={RED}
+            ref={printfParam}
+            >
+            <Txt width='100%' height='100%' padding={[0, 0, 0, 20]} textAlign={'left'} lineHeight={200} fill={BLACK} text="6" fontFamily={'monospace'} />
+            <Txt width='100%' height='100%' padding={[0, 20, 0, 0]} textAlign={'right'} lineHeight={200} fill={BLACK} text="8" fontFamily={'monospace'} />
+        </Rect>
+    </>);
+
+    yield* all(
+        name().height(500, .3),
+        printfParam().height(0).height(200, .3),
+        nameText1().lineHeight(500, .3),
+        nameText2().lineHeight(500, .3),
     );
 
-    yield* spacer().grow(1, .3);
+    yield* beginSlide("Read stack");
 
-    innerLayout().justifyContent("end");
+    let printfreadheight = 100;
+    let line = createRef<Line>();
+    view.add(<>
+        <Line
+            ref={line}
+            points={[
+                [50, printfreadheight],
+                [-50, printfreadheight],
+                [-50, -printfreadheight],
+                [50, -printfreadheight]
+            ]}
+            stroke={GRAY}
+            lineWidth={4}
+            radius={20}
+            position={[400, 800]}
+            />
+    </>);
 
-    spacer().remove();
+    yield* all(code().edit(.3, true)`
+    printf("${edit("%s", "%7$p")}", text, 1..6)
+    push    6
+    mov r9d, 5
+    mov r8d, 4
+    mov ecx, 3
+    mov edx, 2
+    mov esi, 1
+    mov rdi, text
+    mov rax, "%s
+    call printf
+    `,
+        code().x(-3840/4+80, .3),
+        line().position([300, 800]).position([400,800], .3),
+        line().opacity(0).opacity(1, .3)
+    );
 
-    yield* beginSlide("Reorder");
+    yield* beginSlide("Remove 6 again");
+
+    yield* all(
+        name().height(700, .3),
+        printfParam().height(0, .3),
+        nameText1().lineHeight(700, .3),
+        nameText2().lineHeight(700, .3),
+        code().selection(DEFAULT, .3),
+        code().edit(.3, false)`
+        printf("%7$p", text, 1..${edit("6","5")})
+        ${remove(`push    6
+`)}mov r9d, 5
+        mov r8d, 4
+        mov ecx, 3
+        mov edx, 2
+        mov esi, 1
+        mov rdi, text
+        mov rax, "%s
+        call printf
+        `
+    );
+
+    printfParam().remove();
+
+    yield* beginSlide("Read canary");
+
+    yield* all(
+        line().y(0, .3),
+        code().edit(.3, false)`
+        printf("%${edit("7", "??")}$p", text, 1..5)
+        mov r9d, 5
+        mov r8d, 4
+        mov ecx, 3
+        mov edx, 2
+        mov esi, 1
+        mov rdi, text
+        mov rax, "%s
+        call printf
+        `
+    );
+
+    yield* beginSlide("");
 });

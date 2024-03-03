@@ -21,8 +21,7 @@ export default makeScene2D(function* (view) {
         language='py'
         code={`
         from pwn import *
-        # Hello, libc a canary
-        `}
+        # Hello, libc a canary`}
         fontSize={120}
     />);
 
