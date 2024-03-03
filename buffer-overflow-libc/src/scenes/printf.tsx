@@ -145,5 +145,20 @@ mov esi, 1
         ))
     );
 
-    yield* beginSlide("Add text");
+    yield* beginSlide("Reorder");
+
+    const spacer = createRef<Layout>();
+    innerLayout().insert(
+        <>
+        <Layout layout height={0} ref={spacer} />
+        </>, 0
+    );
+
+    yield* spacer().grow(1, .3);
+
+    innerLayout().justifyContent("end");
+
+    spacer().remove();
+
+    yield* beginSlide("Reorder");
 });
